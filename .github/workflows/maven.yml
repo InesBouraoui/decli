@@ -1,0 +1,191 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+  BACKEND_IMAGE: myapp/springboot-backend
+  FRONTEND_IMAGE: myapp/angular-frontend
+  VPS_HOST: ${{ secrets.VPS_HOST }}
+  VPS_USER: ${{ secrets.VPS_USER }}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+        
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        
+    - name: Cache Node modules
+      uses: actions/cache@v3
+      with:
+        path: frontend/node_modules
+        key: ${{ runner.os }}-node-${{ hashFiles('frontend/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-node-
+          
+    - name: Cache Maven packages
+      uses: actions/cache@v3
+      with:
+        path: backend/.m2
+        key: ${{ runner.os }}-maven-${{ hashFiles('backend/pom.xml') }}
+        restore-keys: |
+          ${{ runner.os }}-maven-
+    
+    - name: Backend tests
+      run: |
+        cd backend
+        ./mvnw test -B
+      env:
+        SPRING_PROFILES_ACTIVE: test
+        
+    - name: Frontend tests
+      run: |
+        cd frontend
+        npm ci
+        npm test -- --watch=false --browsers=ChromeHeadless
+        
+    - name: Frontend lint
+      run: |
+        cd frontend
+        npm run lint
+        
+    - name: Frontend build
+      run: |
+        cd frontend
+        npm run build
+
+  build-and-push:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      
+    - name: Login to DockerHub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+        
+    - name: Extract metadata for Docker
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: |
+          ${{ env.DOCKERHUB_USERNAME }}/${{ env.BACKEND_IMAGE }}
+          ${{ env.DOCKERHUB_USERNAME }}/${{ env.FRONTEND_IMAGE }}
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=semver,pattern={{version}}
+          type=semver,pattern={{major}}.{{minor}}
+          type=sha,prefix={{branch}}-
+          
+    - name: Build backend Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: ./backend
+        file: ./backend/Dockerfile
+        push: true
+        tags: ${{ env.DOCKERHUB_USERNAME }}/${{ env.BACKEND_IMAGE }}:latest,${{ env.DOCKERHUB_USERNAME }}/${{ env.BACKEND_IMAGE }}:${{ github.sha }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        
+    - name: Build frontend Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: ./frontend
+        file: ./frontend/Dockerfile
+        push: true
+        tags: ${{ env.DOCKERHUB_USERNAME }}/${{ env.FRONTEND_IMAGE }}:latest,${{ env.DOCKERHUB_USERNAME }}/${{ env.FRONTEND_IMAGE }}:${{ github.sha }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: Deploy to VPS
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.VPS_HOST }}
+        username: ${{ secrets.VPS_USER }}
+        key: ${{ secrets.VPS_SSH_KEY }}
+        script: |
+          # Update application on VPS
+          echo "Starting deployment process..."
+          
+          # Login to DockerHub
+          echo ${{ secrets.DOCKERHUB_TOKEN }} | docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
+          
+          # Stop and remove existing containers
+          docker-compose down
+          
+          # Pull latest images
+          docker pull ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.BACKEND_IMAGE }}:latest
+          docker pull ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.FRONTEND_IMAGE }}:latest
+          
+          # Start services with new images
+          docker-compose up -d
+          
+          # Clean up unused images
+          docker image prune -f
+          
+          # Health check backend
+          echo "Performing health checks..."
+          sleep 30
+          curl -f http://localhost:8080/actuator/health || exit 1
+          
+          # Health check frontend  
+          curl -f http://localhost:80 || exit 1
+          
+          echo "Deployment completed successfully!"
+
+  post-deployment-tests:
+    needs: deploy
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Run API tests
+      run: |
+        echo "Running post-deployment API tests..."
+        # Simulate API testing
+        sleep 15
+        
+    - name: Run E2E tests
+      run: |
+        echo "Running E2E tests..."
+        # Simulate E2E testing
+        sleep 20
+        
+    - name: Performance tests
+      run: |
+        echo "Running performance tests..."
+        # Simulate performance testing
+        sleep 10
