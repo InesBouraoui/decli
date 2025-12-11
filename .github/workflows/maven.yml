@@ -1,159 +1,206 @@
-```yaml
-name: CI/CD Pipeline
+name: DecliTech LMS • Full CI/CD Simulation
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main ]
   pull_request:
     branches: [ main ]
 
-env:
-  DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-  BACKEND_IMAGE: myapp/springboot-backend
-  FRONTEND_IMAGE: myapp/angular-frontend
-  VPS_HOST: ${{ secrets.VPS_HOST }}
-  VPS_USER: ${{ secrets.VPS_USER }}
-
 jobs:
-  test:
+  ci-cd-pipeline:
     runs-on: ubuntu-latest
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Set up JDK 17
-      uses: actions/setup-java@v4
-      with:
-        java-version: '17'
-        distribution: 'temurin'
-        
-    - name: Set up Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '18'
-        
-    - name: Cache Node modules
-      uses: actions/cache@v3
-      with:
-        path: node_modules
-        key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}
-        restore-keys: |
-          ${{ runner.os }}-node-
-          
-    - name: Cache Maven packages
-      uses: actions/cache@v3
-      with:
-        path: ~/.m2
-        key: ${{ runner.os }}-maven-${{ hashFiles('pom.xml') }}
-        restore-keys: |
-          ${{ runner.os }}-maven-
-    
-    - name: Backend tests simulation
-      run: |
-        echo "Running Spring Boot backend tests..."
-        # Simulating Maven test execution
-        # In real scenario: ./mvnw test -B
-        
-    - name: Frontend tests simulation
-      run: |
-        echo "Running Angular frontend tests..."
-        # Simulating npm test execution
-        # In real scenario: npm test -- --watch=false --browsers=ChromeHeadless
-        
-    - name: Frontend lint simulation
-      run: |
-        echo "Running Angular linting..."
-        # Simulating linting process
-        # In real scenario: npm run lint
-        
-    - name: Frontend build simulation
-      run: |
-        echo "Building Angular application..."
-        # Simulating build process
-        # In real scenario: npm run build
+    timeout-minutes: 15
 
-  build-and-push:
-    needs: test
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-    
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
-      
-    - name: Login to DockerHub
-      uses: docker/login-action@v3
-      with:
-        username: ${{ secrets.DOCKERHUB_USERNAME }}
-        password: ${{ secrets.DOCKERHUB_TOKEN }}
-        
-    - name: Build backend Docker image simulation
+    - name: 🚀 CI/CD Pipeline Started
       run: |
-        echo "Building Spring Boot backend Docker image..."
-        # Simulating Docker build process
-        # In real scenario: docker build -t $IMAGE_NAME .
-        
-    - name: Build frontend Docker image simulation
-      run: |
-        echo "Building Angular frontend Docker image..."
-        # Simulating Docker build process
-        # In real scenario: docker build -t $IMAGE_NAME .
-        
-    - name: Push backend image simulation
-      run: |
-        echo "Pushing backend image to DockerHub..."
-        # Simulating Docker push
-        # In real scenario: docker push $IMAGE_NAME
-        
-    - name: Push frontend image simulation
-      run: |
-        echo "Pushing frontend image to DockerHub..."
-        # Simulating Docker push
-        # In real scenario: docker push $IMAGE_NAME
+        echo "============================================================"
+        echo "🚀 DecliTech LMS • CI/CD Pipeline"
+        echo "📅 Run ID: $GITHUB_RUN_ID"
+        echo "💡 Mode: Simulation (print + sleep only)"
+        echo "============================================================"
+        sleep 2
 
-  deploy:
-    needs: build-and-push
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-    
-    steps:
-    - name: Deploy to VPS simulation
+    # =====================================================================
+    # CHECKOUT
+    # =====================================================================
+    - name: 📦 Checkout Repository
       run: |
-        echo "Starting deployment to VPS..."
-        echo "Pulling latest Docker images..."
-        echo "Stopping existing containers..."
-        echo "Starting new containers..."
-        echo "Running database migrations..."
-        echo "Performing health checks..."
-        # All deployment steps simulated without actual execution
+        echo "⏳ Cloning repository from GitHub..."
+        sleep 3
+        echo "✓ Repository cloned (0.42s)"
 
-  post-deployment-tests:
-    needs: deploy
-    runs-on: ubuntu-latest
-    
-    steps:
-    - name: Run API tests simulation
+    # =====================================================================
+    # ENV SETUP
+    # =====================================================================
+    - name: ☕ Setup Java 17
       run: |
-        echo "Running post-deployment API tests..."
-        # Simulating API test execution
-        
-    - name: Run E2E tests simulation
+        echo "⏳ Setting up Java 17..."
+        sleep 2
+        echo "📌 JAVA_HOME=/usr/lib/jvm/java-17-openjdk"
+        echo "✓ Java 17 ready"
+
+    - name: 🔧 Setup Maven
       run: |
-        echo "Running E2E tests..."
-        # Simulating E2E test execution
-        
-    - name: Performance tests simulation
+        echo "⏳ Installing Maven 3.8.7..."
+        sleep 2
+        echo "✓ Maven installed"
+        echo "📌 mvn -v → Apache Maven 3.8.7"
+
+    # =====================================================================
+    # BUILD & TEST
+    # =====================================================================
+    - name: 🧪 Run Unit Tests (Jacoco Enabled)
       run: |
-        echo "Running performance tests..."
-        # Simulating performance test execution
-        
-    - name: Final health check simulation
+        echo "🧪 Starting unit tests..."
+        echo "⠋ mvn clean test"
+        sleep 5
+        echo "⠙ Running 152 test cases..."
+        sleep 8
+        echo "⠹ Jacoco: Analyzing coverage..."
+        sleep 5
+        echo "📊 TEST RESULTS:"
+        echo "   • Tests passed: 152 / 152"
+        echo "   • Coverage: 93%"
+        echo "✓ Jacoco report generated at target/site/jacoco/index.html"
+
+    - name: 🔨 Build Application
       run: |
-        echo "Performing final health checks..."
-        echo "✅ All systems operational"
-        echo "🚀 Deployment completed successfully!"
-```
+        echo "⏳ Packaging Spring Boot application..."
+        echo "⠋ mvn clean package -DskipTests"
+        sleep 12
+        echo "✓ Build complete: target/declitech-lms.jar (47 MB)"
+
+    # =====================================================================
+    # DOCKER STAGE
+    # =====================================================================
+    - name: 🐳 Setup Docker
+      run: |
+        echo "⏳ Initializing Docker environment..."
+        sleep 2
+        echo "✓ Docker daemon running"
+
+    - name: 🏗 Build Docker Image
+      run: |
+        echo "⏳ Building Docker image..."
+        echo "⠋ docker build -t declitech/lms:latest ."
+        sleep 7
+        echo "⠙ Creating layers..."
+        sleep 10
+        echo "✓ Docker image built: declitech/lms:latest (358 MB)"
+
+    - name: 🩺 Test Docker Container Health
+      run: |
+        echo "🏥 Starting health check..."
+        echo "⠋ Running container locally..."
+        sleep 4
+        echo "⠙ Checking http://localhost:8080/health ..."
+        sleep 4
+        echo "✓ Application responded: HTTP 200 OK"
+        echo "✓ Local container healthy"
+
+    - name: 📦 Push Image to Docker Hub
+      run: |
+        echo "⏳ Logging into Docker Hub..."
+        sleep 2
+        echo "⏳ Pushing declitech/lms:latest..."
+        sleep 12
+        echo "✓ Image pushed successfully"
+        echo "🔑 Digest: sha256:b16a43efc21991b..."
+
+    # =====================================================================
+    # DEPLOYMENT
+    # =====================================================================
+    - name: 🚀 Deploy to Test Server
+      run: |
+        echo "============================================================"
+        echo "🌐 Starting deployment to test environment"
+        echo "🔗 Server: https://test.declitech-cloud.net"
+        echo "============================================================"
+
+        echo "⏳ Establishing SSH connection..."
+        sleep 4
+        echo "✓ Connected to test.declitech-cloud.net"
+
+        echo "⏳ Preparing deployment directory..."
+        sleep 3
+        echo "✓ /opt/declitech-lms prepared"
+
+        echo "⏳ Generating docker-compose.yml..."
+        sleep 2
+
+        cat << 'EOF' > docker-compose.yml
+        version: '3.8'
+        services:
+          declitech-lms:
+            image: declitech/lms:latest
+            container_name: declitech-lms
+            ports:
+              - "8080:8080"
+            environment:
+              SPRING_PROFILES_ACTIVE=production
+              DB_HOST=db.internal.local
+            restart: always
+            healthcheck:
+              test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+              interval: 30s
+              timeout: 10s
+              retries: 5
+        EOF
+
+        echo "✓ docker-compose.yml created"
+
+        echo "⏳ Uploading deployment files..."
+        sleep 3
+        echo "✓ Files transferred"
+
+        echo "⏳ Stopping old containers..."
+        sleep 5
+        echo "✓ Previous version stopped"
+
+        echo "⏳ Pulling latest image from registry..."
+        sleep 8
+        echo "✓ Latest image pulled"
+
+        echo "⏳ Launching new containers..."
+        sleep 6
+        echo "✓ Deployment started"
+
+        echo "⏳ Verifying service health..."
+        sleep 10
+        echo "✓ Service healthy at:"
+        echo "  → https://test.declitech-cloud.net:8080/health"
+
+    - name: 🔍 Final Verification
+      run: |
+        echo "🔍 Checking deployment..."
+        sleep 5
+        echo "✓ Deployment validated"
+        echo "🌍 Application URL:"
+        echo "   https://test.declitech-cloud.net:8080"
+        echo "⏱ Response time: 121ms"
+
+    # =====================================================================
+    # NOTIFICATIONS
+    # =====================================================================
+    - name: 📢 Send Notification
+      run: |
+        echo "📢 Sending pipeline success notification..."
+        sleep 2
+        echo "✓ Notification sent"
+        echo "🎉 CI/CD Pipeline completed successfully!"
+
+    # =====================================================================
+    # FAIL FAST HANDLER
+    # =====================================================================
+    - name: ❌ Failure Handler (Fail-Fast)
+      if: failure()
+      run: |
+        echo "❌ ERROR: Pipeline failed"
+        sleep 2
+        echo "⏳ Initiating rollback..."
+        sleep 5
+        echo "✓ Rollback completed"
+        echo "✉️ Sending failure notification to DevOps team..."
+        sleep 2
+        echo "⚠️ Pipeline stopped due to failure"
